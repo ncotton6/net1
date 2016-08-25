@@ -1,3 +1,7 @@
+import controller.Application;
+import controller.Client;
+import controller.Proxy;
+import controller.Server;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import util.Config;
@@ -31,8 +35,17 @@ public class tsapp {
             return; // end the program
         }
 
-        System.out.println(c.isClient());
-        System.out.println(Arrays.toString(c.getArguments().toArray()));
+        Application app = null;
+        if(c.isClient()){
+            app = new Client();
+        }else if(c.isProxy()){
+            app = new Proxy();
+        }else if(c.isServer()){
+            app = new Server();
+        }
+
+        app.setConfig(c);
+        app.run();
     }
 
 }
