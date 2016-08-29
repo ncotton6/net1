@@ -1,6 +1,7 @@
-package controller;
+package app.applicationimpl;
 
 
+import app.Application;
 import util.Config;
 
 import java.io.IOException;

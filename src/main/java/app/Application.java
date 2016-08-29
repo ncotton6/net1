@@ -1,4 +1,4 @@
-package controller;
+package app;
 
 
 import util.Config;
@@ -8,8 +8,8 @@ import util.Config;
  */
 public interface Application {
 
-    public void setConfig(Config c);
+    void setConfig(Config c);
 
-    public void run();
+    void run();
 
 }

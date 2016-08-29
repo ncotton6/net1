@@ -1,13 +1,10 @@
-import controller.Application;
-import controller.Client;
-import controller.Proxy;
-import controller.Server;
+import app.Application;
+import app.applicationimpl.Client;
+import app.applicationimpl.Proxy;
+import app.applicationimpl.Server;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import util.Config;
-
-import java.util.Arrays;
-import java.util.Collections;
 
 /**
  * Created by nathaniel on 8/24/16.
@@ -43,9 +40,12 @@ public class tsapp {
         }else if(c.isServer()){
             app = new Server();
         }
-
-        app.setConfig(c);
-        app.run();
+        if(app != null) {
+            app.setConfig(c);
+            app.run();
+        }else{
+            System.err.println("Unable to select the running environment.");
+        }
     }
 
 }
