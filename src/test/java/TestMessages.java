@@ -23,7 +23,7 @@ public class TestMessages {
         System.out.println(m2.getOp());
         for(ByteArray ba : m2.getFields().values()){
             Field f = (Field)ba;
-            System.out.println(f.getId() + " : " + Arrays.toString(f.getData()));
+            System.out.println(f.getId() + " : " + Arrays.toString(f.getData()) + " ; " + f.getDataAsString());
         }
     }
 }

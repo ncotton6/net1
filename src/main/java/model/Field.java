@@ -45,6 +45,10 @@ public class Field implements ByteArray {
         return data;
     }
 
+    public String getDataAsString(){
+        return new String(data);
+    }
+
     public void setData(byte[] data) {
         this.data = data;
     }

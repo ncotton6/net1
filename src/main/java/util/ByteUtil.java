@@ -16,9 +16,8 @@ public class ByteUtil {
         return bb.array();
     }
 
-    public static int getInt(byte[] barray){
-        System.out.println(Arrays.toString(barray));
-        ByteBuffer bb = ByteBuffer.wrap(barray);
+    public static int getInt(byte[] bytes){
+        ByteBuffer bb = ByteBuffer.wrap(bytes);
         return bb.getInt();
     }
 

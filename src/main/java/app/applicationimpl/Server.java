@@ -2,6 +2,8 @@ package app.applicationimpl;
 
 
 import app.Application;
+import app.Handler;
+import app.handlerimpl.ServerHandler;
 import util.Config;
 
 import java.io.IOException;
@@ -24,6 +26,8 @@ public class Server implements Application {
         try {
             int udpPort = Integer.valueOf(config.getArguments().get(0));
             int tcpPort = Integer.valueOf(config.getArguments().get(1));
+
+            final Handler handler = new ServerHandler(this);
             // start up the udp port
             final DatagramSocket udpSocket = new DatagramSocket(udpPort);
             Thread udpThread = new Thread(()->{
@@ -31,6 +35,7 @@ public class Server implements Application {
                 while(true) {
                     DatagramPacket recievePacket = new DatagramPacket(receiveData,receiveData.length);
                     // handle code
+                    handler.handle(recievePacket);
                 }
             });
             udpThread.setDaemon(true);
@@ -43,6 +48,7 @@ public class Server implements Application {
                     try {
                         Socket acceptedSocket = tcpSocket.accept();
                         // handle code
+                        handler.handle(acceptedSocket);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
