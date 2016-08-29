@@ -4,7 +4,11 @@ import app.applicationimpl.Proxy;
 import app.applicationimpl.Server;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
+import org.kohsuke.args4j.spi.InetAddressOptionHandler;
+import util.ByteUtil;
 import util.Config;
+
+import java.util.Arrays;
 
 /**
  * Created by nathaniel on 8/24/16.
@@ -12,7 +16,6 @@ import util.Config;
 public class tsapp {
 
     public static void main(String[] args){
-        System.out.println("Run");
 
         Config c = new Config();
 
