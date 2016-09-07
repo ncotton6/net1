@@ -3,6 +3,7 @@ package model;
 import util.ByteUtil;
 
 import java.util.HashMap;
+import java.util.Optional;
 
 /**
  * Created by nathaniel on 8/29/16.
@@ -39,5 +40,14 @@ public class FieldMapper extends HashMap<String, Integer> {
             byte[] length = ByteUtil.getBytes(nameInBytes.length);
             return ByteUtil.combine(id,length,nameInBytes);
         }
+    }
+
+    public static String reverseLookup(int identifier) {
+        FieldMapper fm = get();
+        System.out.println(identifier);
+        Optional<Entry<String, Integer>> value = fm.entrySet().stream().filter((ent)->ent.getValue()==identifier).findFirst();
+        if(value.isPresent())
+            return value.get().getKey();
+        throw new RuntimeException("Failed to find reverse lookup");
     }
 }

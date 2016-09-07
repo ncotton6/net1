@@ -16,14 +16,38 @@ import java.util.*;
 public class ByteUtil {
 
     public static byte[] getBytes(int num) {
-        ByteBuffer bb = ByteBuffer.allocate(4);
-        bb.putInt(num);
-        return bb.array();
+        return ByteBuffer.allocate(4).putInt(num).array();
+    }
+
+    public static byte[] getBytes(byte num) {
+        return new byte[]{num};
+    }
+
+    public static byte[] getBytes(short num) {
+        return ByteBuffer.allocate(2).putShort(num).array();
     }
 
     public static int getInt(byte[] bytes) {
-        ByteBuffer bb = ByteBuffer.wrap(bytes);
-        return bb.getInt();
+        return ByteBuffer.wrap(bytes).getInt();
+    }
+
+    public static int getInt(byte[] bytes, int i) {
+        byte[] intBytes = Arrays.copyOfRange(bytes,i,i+4);
+        return ByteBuffer.wrap(intBytes).getInt();
+    }
+
+    public static short getShort(byte[] bytes) {
+        return ByteBuffer.wrap(bytes).getShort();
+    }
+
+    public static short getShort(byte[] bytes, int i){
+        byte[] shortBytes = Arrays.copyOfRange(bytes,i,i+2);
+        return ByteBuffer.wrap(shortBytes).getShort();
+    }
+
+    public static String getString(byte[] bytes, int start, int end){
+        byte[] stringBytes = Arrays.copyOfRange(bytes,start,end);
+        return new String(stringBytes);
     }
 
     public static byte[] combine(byte[]... arrays) {
@@ -53,13 +77,16 @@ public class ByteUtil {
     }
 
     public static byte[] convert(String name, Object objData) throws IOException {
-        if (objData instanceof byte[])
-            return (byte[]) objData;
-        else if (objData instanceof String)
-            return ((String) objData).getBytes();
-        else if (objData instanceof Integer)
-            return ByteUtil.getBytes((int) objData);
-        else if (objData instanceof Field)
+        if (objData instanceof byte[]) {
+            byte[] bytes = (byte[]) objData;
+            return ByteUtil.combine(FieldMapper.lookupName(name), ByteUtil.getBytes(bytes.length), bytes);
+        } else if (objData instanceof String) {
+            byte[] bytes = ((String) objData).getBytes();
+            return ByteUtil.combine(FieldMapper.lookupName(name), ByteUtil.getBytes(bytes.length), bytes);
+        } else if (objData instanceof Integer) {
+            byte[] bytes = ByteUtil.getBytes((int) objData);
+            return ByteUtil.combine(FieldMapper.lookupName(name), ByteUtil.getBytes(bytes.length), bytes);
+        } else if (objData instanceof Field)
             return ((Field) objData).getByteArray();
         else if (objData instanceof Object[]) {
             // need to go through all of the objects in the array converting them to a byte array.
@@ -81,10 +108,10 @@ public class ByteUtil {
     private static byte[] handleMap(String name, Map objData) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Set keys = objData.keySet();
-        for(Object key : keys){
-            if(key instanceof String){
-                baos.write(convert((String)key,objData.get(key)));
-            }else{
+        for (Object key : keys) {
+            if (key instanceof String) {
+                baos.write(convert((String) key, objData.get(key)));
+            } else {
                 throw new RuntimeException("Maps being converted to bytes need to have strings for keys.");
             }
         }
@@ -114,5 +141,4 @@ public class ByteUtil {
             return ByteUtil.combine(length, bytes);
         }
     }
-
 }

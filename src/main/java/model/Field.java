@@ -15,6 +15,11 @@ public class Field implements ByteArray {
     public Field() {
     }
 
+    public Field(String id, Object objData) {
+        this.id = id;
+        this.objData = objData;
+    }
+
     public String getId() {
         return id;
     }

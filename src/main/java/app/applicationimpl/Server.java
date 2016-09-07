@@ -61,4 +61,14 @@ public class Server implements Application {
             System.err.println(e.getMessage());
         }
     }
+
+    @Override
+    public DatagramSocket getDatagramSocket() {
+        return null;
+    }
+
+    @Override
+    public ServerSocket getServerSocket() {
+        return null;
+    }
 }

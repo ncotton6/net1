@@ -2,40 +2,54 @@ package model;
 
 import util.ByteUtil;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by nathaniel on 8/29/16.
  */
 public class VersionOneParseHandler implements ParseHandler {
 
+
     @Override
     public Message parse(byte[] bytes) {
         Message ret = new Message();
-        ret.setVersion(1);
-        int operation = ByteUtil.getInt(new byte[]{bytes[4], bytes[5], bytes[6], bytes[7]});
+        ret.setVersion((byte)1);
+        short operation = ByteUtil.getShort(new byte[]{bytes[1], bytes[2]});
         ret.setOp(Operation.getOperation(operation));
-        ret.setFields(new HashMap<>());
-        int index = 8; // starting index after the version id and operation
+        int index = 3; // starting index after the version id and operation
         // parse out the fields
         while (index < bytes.length) {
-            Field f = new Field();
-            byte[] fieldId = new byte[4];
-            for (int i = 0; i < fieldId.length; ++i)
-                fieldId[i] = bytes[i + index];
-            byte[] fieldLength = new byte[4];
-            for(int i =0; i < fieldLength.length; ++i)
-                fieldLength[i] = bytes[i + index + 4];
-            int fId = ByteUtil.getInt(fieldId);
-            int length = ByteUtil.getInt(fieldLength);
-            System.out.println(length);
-            f.setId(fId);
-            byte[] data = new byte[length];
-            System.arraycopy(bytes,index+8,data,0,length);
-            f.setData(data);
-            index += 8 + length;
-            ret.getFields().put(f.getId(),f);
+            // read 4 bytes to determine what data is going to be coming
+            int identifier = ByteUtil.getInt(bytes,index);
+            index += 4; // move index by 4 for the int
+            String name = null;
+            if(identifier == 0){
+                // it is an unknown field
+                int nameLength = ByteUtil.getInt(bytes,index);
+                index += 4;
+                name = ByteUtil.getString(bytes,index,index+nameLength);
+                index += nameLength;
+            }else{
+                name = FieldMapper.reverseLookup(identifier);
+            }
+            // read the value associated with the name
+            int valueLength = ByteUtil.getInt(bytes,index);
+            index += 4;
+            byte[] value = Arrays.copyOfRange(bytes,index,index+valueLength);
+            index += valueLength;
+            Field f = new Field(name,value);
+            ret.addField(f);
         }
+        cleanData(ret);
         return ret;
+    }
+
+    private void cleanData(Message ret) {
+        Map<String, Object> map = ret.getFields();
+        for(String key : map.keySet()){
+            System.out.println(key);
+        }
     }
 }

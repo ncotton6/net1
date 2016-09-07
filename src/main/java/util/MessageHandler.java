@@ -11,7 +11,7 @@ public class MessageHandler {
 
     public static Message getMessage(byte[] message){
         try {
-            int version = ByteUtil.getInt(new byte[]{message[0],message[1],message[2],message[3]});
+            byte version = message[0];
             return getParseHandlerForVersion(version).parse(message);
         }catch (Exception e){
             e.printStackTrace();
@@ -19,7 +19,7 @@ public class MessageHandler {
         throw new RuntimeException("Invalid Message Parse");
     }
 
-    public static ParseHandler getParseHandlerForVersion(int version){
+    public static ParseHandler getParseHandlerForVersion(byte version){
         if(version == 1){
             return new VersionOneParseHandler();
         }
