@@ -1,5 +1,7 @@
 package model;
 
+import util.ByteUtil;
+
 import java.util.HashMap;
 
 /**
@@ -8,22 +10,34 @@ import java.util.HashMap;
 public class FieldMapper extends HashMap<String, Integer> {
 
     private static FieldMapper fm = null;
+    private static final String UNKNOWN = "unknown";
 
     private FieldMapper() {
         super();
-        put("user",1);
-        put("pass",2);
-        put("time",3);
+        put(UNKNOWN, 0);
+        put("user", 1);
+        put("pass", 2);
+        put("time", 3);
     }
 
-    public static int getId(String name) {
+    private static FieldMapper get() {
         if (fm == null)
             synchronized (FieldMapper.class) {
                 if (fm == null)
                     fm = new FieldMapper();
             }
-        if (fm.containsKey(name))
-            return fm.get(name);
-        throw new RuntimeException("Failed to Map the Field");
+        return fm;
+    }
+
+    public static byte[] lookupName(String name) {
+        FieldMapper fm = get();
+        if (fm.containsKey(name)) {
+            return ByteUtil.getBytes(fm.get(name));
+        } else {
+            byte[] id = ByteUtil.getBytes(fm.get(UNKNOWN));
+            byte[] nameInBytes = name.getBytes();
+            byte[] length = ByteUtil.getBytes(nameInBytes.length);
+            return ByteUtil.combine(id,length,nameInBytes);
+        }
     }
 }
