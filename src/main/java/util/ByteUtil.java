@@ -1,10 +1,8 @@
 package util;
 
-import model.ByteArray;
 import model.Field;
-import model.FieldMapper;
+import model.FieldType;
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,26 +25,40 @@ public class ByteUtil {
         return ByteBuffer.allocate(2).putShort(num).array();
     }
 
+    private static byte[] getBytes(long num) {
+        return ByteBuffer.allocate(8).putLong(num).array();
+    }
+
     public static int getInt(byte[] bytes) {
         return ByteBuffer.wrap(bytes).getInt();
     }
 
     public static int getInt(byte[] bytes, int i) {
-        byte[] intBytes = Arrays.copyOfRange(bytes,i,i+4);
-        return ByteBuffer.wrap(intBytes).getInt();
+        return getInt(Arrays.copyOfRange(bytes, i, i + 4));
     }
 
     public static short getShort(byte[] bytes) {
         return ByteBuffer.wrap(bytes).getShort();
     }
 
-    public static short getShort(byte[] bytes, int i){
-        byte[] shortBytes = Arrays.copyOfRange(bytes,i,i+2);
-        return ByteBuffer.wrap(shortBytes).getShort();
+    public static short getShort(byte[] bytes, int i) {
+        return getShort(Arrays.copyOfRange(bytes, i, i + 2));
     }
 
-    public static String getString(byte[] bytes, int start, int end){
-        byte[] stringBytes = Arrays.copyOfRange(bytes,start,end);
+    public static long getLong(byte[] bytes){
+        return ByteBuffer.wrap(bytes).getLong();
+    }
+
+    public static long getLong(byte[] bytes, int index) {
+        return getLong(Arrays.copyOfRange(bytes,index,index+8));
+    }
+
+    public static byte getByte(byte[] bytes) {
+        return bytes[0];
+    }
+
+    public static String getString(byte[] bytes, int start, int end) {
+        byte[] stringBytes = Arrays.copyOfRange(bytes, start, end);
         return new String(stringBytes);
     }
 
@@ -79,13 +91,26 @@ public class ByteUtil {
     public static byte[] convert(String name, Object objData) throws IOException {
         if (objData instanceof byte[]) {
             byte[] bytes = (byte[]) objData;
-            return ByteUtil.combine(FieldMapper.lookupName(name), ByteUtil.getBytes(bytes.length), bytes);
+            bytes = combine(getBytes(bytes.length), bytes);
+            if (name == null)
+                return bytes;
+            return ByteUtil.combine(FieldType.lookupByteArrayIdentifier(name), bytes);
         } else if (objData instanceof String) {
             byte[] bytes = ((String) objData).getBytes();
-            return ByteUtil.combine(FieldMapper.lookupName(name), ByteUtil.getBytes(bytes.length), bytes);
+            bytes = combine(getBytes(bytes.length), bytes);
+            if (name == null)
+                return bytes;
+            return ByteUtil.combine(FieldType.lookupByteArrayIdentifier(name), bytes);
         } else if (objData instanceof Integer) {
             byte[] bytes = ByteUtil.getBytes((int) objData);
-            return ByteUtil.combine(FieldMapper.lookupName(name), ByteUtil.getBytes(bytes.length), bytes);
+            if (name == null)
+                return bytes;
+            return ByteUtil.combine(FieldType.lookupByteArrayIdentifier(name), ByteUtil.getBytes(bytes.length), bytes);
+        } else if (objData instanceof Long) {
+            byte[] bytes = getBytes((long) objData);
+            if (name == null)
+                return bytes;
+            return combine(FieldType.lookupByteArrayIdentifier(name), getBytes(bytes.length), bytes);
         } else if (objData instanceof Field)
             return ((Field) objData).getByteArray();
         else if (objData instanceof Object[]) {
@@ -119,7 +144,7 @@ public class ByteUtil {
         byte[] length = getBytes(bytes.length);
         baos.close();
         if (name != null) {
-            byte[] identifier = FieldMapper.lookupName(name);
+            byte[] identifier = ByteUtil.getBytes(FieldType.lookup(name).id);
             return ByteUtil.combine(identifier, length, bytes);
         } else {
             return ByteUtil.combine(length, bytes);
@@ -135,7 +160,7 @@ public class ByteUtil {
         baos.close();
         byte[] length = getBytes(bytes.length);
         if (name != null) {
-            byte[] identifier = FieldMapper.lookupName(name);
+            byte[] identifier = ByteUtil.getBytes(FieldType.lookup(name).id);
             return ByteUtil.combine(identifier, length, bytes);
         } else {
             return ByteUtil.combine(length, bytes);

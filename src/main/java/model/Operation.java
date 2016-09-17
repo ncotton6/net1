@@ -6,7 +6,9 @@ package model;
 public enum Operation {
 
     GETTIME((short) 0),
-    CHANGETIME((short) 1);
+    CHANGETIME((short) 1),
+    GETTIMERETURN((short) 2),
+    CHANGETIMERETURN((short)3);
 
     public final short id;
 

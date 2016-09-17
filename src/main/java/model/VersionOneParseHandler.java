@@ -1,9 +1,9 @@
 package model;
 
 import util.ByteUtil;
+import util.Converter;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -24,32 +24,28 @@ public class VersionOneParseHandler implements ParseHandler {
             // read 4 bytes to determine what data is going to be coming
             int identifier = ByteUtil.getInt(bytes,index);
             index += 4; // move index by 4 for the int
-            String name = null;
+            // read the value associated with the name
+            Field f = new Field();
             if(identifier == 0){
                 // it is an unknown field
                 int nameLength = ByteUtil.getInt(bytes,index);
                 index += 4;
-                name = ByteUtil.getString(bytes,index,index+nameLength);
+                f.setId(ByteUtil.getString(bytes,index,index+nameLength));
                 index += nameLength;
-            }else{
-                name = FieldMapper.reverseLookup(identifier);
             }
-            // read the value associated with the name
             int valueLength = ByteUtil.getInt(bytes,index);
             index += 4;
             byte[] value = Arrays.copyOfRange(bytes,index,index+valueLength);
             index += valueLength;
-            Field f = new Field(name,value);
+            f.setObjData(value);
+            if(identifier != 0) {
+                FieldType ft = FieldType.lookup(identifier);
+                f.setId(ft.name());
+                f.setObjData(Converter.convert(ret.getVersion(), ft.clazz, value));
+            }
+
             ret.addField(f);
         }
-        cleanData(ret);
         return ret;
-    }
-
-    private void cleanData(Message ret) {
-        Map<String, Object> map = ret.getFields();
-        for(String key : map.keySet()){
-            System.out.println(key);
-        }
     }
 }

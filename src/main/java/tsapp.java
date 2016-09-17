@@ -8,6 +8,7 @@ import org.kohsuke.args4j.spi.InetAddressOptionHandler;
 import util.ByteUtil;
 import util.Config;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -15,7 +16,7 @@ import java.util.Arrays;
  */
 public class tsapp {
 
-    public static void main(String[] args){
+    public static void main(String[] args) throws IOException {
 
         Config c = new Config();
 
@@ -45,7 +46,16 @@ public class tsapp {
         }
         if(app != null) {
             app.setConfig(c);
-            app.run();
+            Application finalApp = app;
+            Thread t = new Thread(() -> {
+                try {
+                    finalApp.run();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            t.setDaemon(false);
+            t.start();
         }else{
             System.err.println("Unable to select the running environment.");
         }

@@ -3,6 +3,7 @@ package app;
 
 import util.Config;
 
+import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
 
@@ -13,7 +14,7 @@ public interface Application {
 
     void setConfig(Config c);
 
-    void run();
+    void run() throws IOException;
 
     DatagramSocket getDatagramSocket();
 

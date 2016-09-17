@@ -20,6 +20,11 @@ public class Field implements ByteArray {
         this.objData = objData;
     }
 
+    public Field(FieldType ft, Object objData){
+        this.id = ft.name();
+        this.objData = objData;
+    }
+
     public String getId() {
         return id;
     }

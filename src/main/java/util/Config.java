@@ -23,13 +23,15 @@ public class Config {
     private boolean useUDP = false;
 
     @Option(name = "-t", forbids = {"-s", "-u"}, usage = "use TCP. client & proxy server applications")
+    private boolean tempTest;
+
     private boolean useTCP = false;
 
     @Option(name = "-z", depends = {"-c"}, usage = "use UTC time. Client applications.")
     private boolean useUTCTime = false;
 
     @Option(name = "-T", forbids = {"-p"}, usage = "set server time. client & server applications.")
-    private int time = -1;
+    private long time = -1;
 
     @Option(name = "--user", forbids = {"-p"}, usage = "<name>: credentials to use. client & server applications.")
     private String user = "";
@@ -74,7 +76,7 @@ public class Config {
         return useUTCTime;
     }
 
-    public int getTime() {
+    public long getTime() {
         return time;
     }
 
@@ -100,5 +102,17 @@ public class Config {
 
     public List<String> getArguments() {
         return arguments;
+    }
+
+    public String getServerAddress(){
+        return arguments.get(0);
+    }
+
+    public int getPort(){
+        return Integer.valueOf(arguments.get(isServer() ? 0 : 1));
+    }
+
+    public int getSecondPort(){
+        return Integer.valueOf(arguments.get(isServer() ? 1 : 2));
     }
 }

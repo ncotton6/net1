@@ -4,11 +4,9 @@ import util.ByteUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Created by nathaniel on 8/29/16.
@@ -20,6 +18,11 @@ public class Message implements ByteArray {
     private Map<String, Object> fields = new HashMap<>();
 
     public Message() {
+    }
+
+    public Message(byte version, Operation op) {
+        this.version = version;
+        this.op = op;
     }
 
     public Message(byte version, Operation op, Map<String, Object> fields) {
@@ -52,14 +55,25 @@ public class Message implements ByteArray {
         this.fields = fields;
     }
 
-    public void addField(Field f) {
-        addData(f.getId(),f);
+    public Message addField(Field f) {
+        return addData(f.getId(),f);
     }
 
-    public void addData(String name, Object data){
+    public Message addData(String name, Object data){
         if (fields == null)
             fields = new HashMap<>();
         fields.put(name, data);
+        return this;
+    }
+
+    public Object get(FieldType ft) {
+        Optional<Object> field = fields.values().stream().filter((v)-> v instanceof Field && ((Field) v).getId().equals(ft.name())).findFirst();
+        if(field.isPresent()) {
+            if (field.get() instanceof Field)
+                return ((Field)field.get()).getObjData();
+            return field.get();
+        }
+        return null;
     }
 
     @Override
@@ -67,12 +81,12 @@ public class Message implements ByteArray {
         if (version != 0) {
             try {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                baos.write(ByteUtil.getBytes(this.version));
+                baos.write(ByteUtil.getBytes(op.id));
                 for(String key : fields.keySet()){
                     baos.write(ByteUtil.convert(key,fields.get(key)));
                 }
-                byte[] version = ByteUtil.getBytes(this.version);
-                byte[] operation = ByteUtil.getBytes(op.id);
-                return ByteUtil.combine(version,operation,baos.toByteArray());
+                return baos.toByteArray();
             } catch (IOException e) {
                 e.printStackTrace();
                 throw new RuntimeException(e);
