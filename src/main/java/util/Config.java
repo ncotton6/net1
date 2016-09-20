@@ -1,7 +1,6 @@
 package util;
 
-import org.kohsuke.args4j.Argument;
-import org.kohsuke.args4j.Option;
+import org.apache.commons.cli.*;
 
 import java.util.*;
 
@@ -10,47 +9,21 @@ import java.util.*;
  */
 public class Config {
 
-    @Option(name = "-c", forbids = {"-p", "-s"}, usage = "Designates the application should run as a client.")
     private boolean client = false;
-
-    @Option(name = "-p", forbids = {"-c", "-s"}, usage = "Designates the application should run as a proxy.")
     private boolean proxy = false;
-
-    @Option(name = "-s", forbids = {"-c", "-p"}, usage = "Designates the application should run as a server.")
     private boolean server = false;
-
-    @Option(name = "-u", forbids = {"-s", "-t"}, usage = "use UDP. client & proxy server applications")
     private boolean useUDP = false;
-
-    @Option(name = "-t", forbids = {"-s", "-u"}, usage = "use TCP. client & proxy server applications")
-    private boolean tempTest;
-
     private boolean useTCP = false;
-
-    @Option(name = "-z", depends = {"-c"}, usage = "use UTC time. Client applications.")
     private boolean useUTCTime = false;
-
-    @Option(name = "-T", forbids = {"-p"}, usage = "set server time. client & server applications.")
     private long time = -1;
-
-    @Option(name = "--user", forbids = {"-p"}, usage = "<name>: credentials to use. client & server applications.")
     private String user = "";
-
-    @Option(name = "--pass", forbids = {"-p"}, usage = "<password>: credentials to use. client & server application.")
     private String pass = "";
-
-    @Option(name = "-n", depends = {"-c"}, usage = "<#>: number of consecutive times to query the server. client applications.")
     private int numberOfTimes = 1;
-
-    @Option(name = "-proxy-udp", depends = {"-p"}, usage = "server UDP port to use. proxy application.")
     private int proxyUDP = -1;
-
-    @Option(name = "-proxy-tcp", depends = {"-p"}, usage = "server TCP port to use. proxy application.")
     private int proxyTCP = -1;
-
-
-    @Argument
-    private List<String> arguments = new ArrayList<String>();
+    private String serverAddress;
+    private int port1 = -1;
+    private int port2 = -1;
 
     public boolean isClient() {
         return client;
@@ -100,19 +73,90 @@ public class Config {
         return proxyTCP;
     }
 
-    public List<String> getArguments() {
-        return arguments;
+    public String getServerAddress() {
+        return serverAddress;
     }
 
-    public String getServerAddress(){
-        return arguments.get(0);
+    public int getPort() {
+        return port1;
     }
 
-    public int getPort(){
-        return Integer.valueOf(arguments.get(isServer() ? 0 : 1));
+    public int getSecondPort() {
+        return port2;
     }
 
-    public int getSecondPort(){
-        return Integer.valueOf(arguments.get(isServer() ? 1 : 2));
+
+    public static Config parseArgs(String[] args) throws ParseException {
+        Config c = new Config();
+        CommandLineParser clp = new DefaultParser();
+        CommandLine cl = clp.parse(getArgsOptions(), args);
+
+        // move command line values to class values
+        c.client = cl.hasOption("c");
+        c.server = cl.hasOption("s");
+        c.proxy = cl.hasOption("p");
+        c.useTCP = cl.hasOption("t");
+        c.useUDP = cl.hasOption("u") || !cl.hasOption("t");
+        c.useUTCTime = cl.hasOption("z");
+
+        c.time = cl.hasOption("T") ? Long.valueOf(cl.getOptionValue("T")) : -1;
+        c.numberOfTimes = cl.hasOption("n") ? Integer.valueOf(cl.getOptionValue("n")) : 1;
+
+        c.user = cl.hasOption("user") ? cl.getOptionValue("user") : null;
+        c.pass = cl.hasOption("pass") ? cl.getOptionValue("pass") : null;
+
+        c.proxyUDP = cl.hasOption("proxy-udp") ? Integer.valueOf(cl.getOptionValue("proxy-udp")) : -1;
+        c.proxyTCP = cl.hasOption("proxy-tcp") ? Integer.valueOf(cl.getOptionValue("proxy-tcp")) : -1;
+
+        if(c.server){
+            c.port1 = Integer.valueOf(cl.getArgList().get(0));
+            c.port2 = Integer.valueOf(cl.getArgList().get(1));
+        }else {
+            c.serverAddress = cl.getArgList().get(0);
+            c.port1 = Integer.valueOf(cl.getArgList().get(1));
+            c.port2 = cl.getArgList().size() >= 3 ? Integer.valueOf(cl.getArgList().get(2)) : -1;
+        }
+
+        verifyConfig(c);
+
+        return c;
     }
+
+    private static void verifyConfig(Config c) {
+        if(c != null){
+            return;
+        }
+        throw new IllegalArgumentException("Not a valid configuration");
+    }
+
+    private static Options getArgsOptions() {
+        Options options = new Options();
+        // environment
+        options.addOption(new Option("c", false, "The application will act as a client"));
+        options.addOption(new Option("p", false, "The application will act as a proxy"));
+        options.addOption(new Option("s", false, "The application will act as a server"));
+
+        // Transport
+        options.addOption(new Option("t", false, "Use TCP for connections"));
+        options.addOption(new Option("u", false, "Use UDP for connections"));
+
+        // change the time
+        options.addOption(new Option("T", true, "Specifies a time to set"));
+        options.addOption(new Option("", "user", true, "Username for the credentials"));
+        options.addOption(new Option("", "pass", true, "Password for the credentials"));
+
+        // execution times
+        options.addOption(new Option("n", true, "Number of times to execute the command"));
+
+        // time type
+        options.addOption(new Option("z", true, "Use UTC time"));
+
+        // proxy transport
+        options.addOption(new Option("", "proxy-udp", true, "Proxy UDP connection"));
+        options.addOption(new Option("", "proxy-tcp", true, "Proxy TCP connection"));
+
+        return options;
+    }
+
+
 }

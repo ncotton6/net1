@@ -16,7 +16,7 @@ public class TestServerClient {
             Thread.sleep(100);
             tsapp.main("-c localhost 5000".split(" "));
             Thread.sleep(300);
-        }catch (IOException | InterruptedException e){
+        }catch (InterruptedException e){
             Assert.fail();
         }
     }
@@ -30,7 +30,7 @@ public class TestServerClient {
             Thread.sleep(3000);
             //tsapp.main("-c localhost 5000".split(" "));
             Thread.sleep(300000);
-        }catch (IOException | InterruptedException e){
+        }catch (InterruptedException e){
             Assert.fail();
         }
     }

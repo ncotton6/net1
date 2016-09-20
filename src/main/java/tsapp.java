@@ -2,9 +2,8 @@ import app.Application;
 import app.applicationimpl.Client;
 import app.applicationimpl.Proxy;
 import app.applicationimpl.Server;
-import org.kohsuke.args4j.CmdLineException;
-import org.kohsuke.args4j.CmdLineParser;
-import org.kohsuke.args4j.spi.InetAddressOptionHandler;
+
+import org.apache.commons.cli.ParseException;
 import util.ByteUtil;
 import util.Config;
 
@@ -16,49 +15,38 @@ import java.util.Arrays;
  */
 public class tsapp {
 
-    public static void main(String[] args) throws IOException {
-
-        Config c = new Config();
-
-        CmdLineParser parser = new CmdLineParser(c);
-        try{
-            parser.parseArgument(args);
+    public static void main(String[] args) {
+        try {
+            Config c = null;
+            c = Config.parseArgs(args);
 
 
-            if(false){ // todo add additional checks to the arguments parsing
-                throw new CmdLineException("The provided arguments do not specify the proper connection information.");
+            Application app = null;
+            if (c.isClient()) {
+                app = new Client();
+            } else if (c.isProxy()) {
+                app = new Proxy();
+            } else if (c.isServer()) {
+                app = new Server();
             }
-
-        }catch (CmdLineException e){
-            System.err.println(e.getMessage());
-            System.err.println("java tsapp -{c,s,p} [options] [server address] port [2nd port]");
-            parser.printUsage(System.err);
-            return; // end the program
+            if (app != null) {
+                app.setConfig(c);
+                Application finalApp = app;
+                Thread t = new Thread(() -> {
+                    try {
+                        finalApp.run();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+                t.setDaemon(false);
+                t.start();
+            } else {
+                System.err.println("Unable to select the running environment.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
-        Application app = null;
-        if(c.isClient()){
-            app = new Client();
-        }else if(c.isProxy()){
-            app = new Proxy();
-        }else if(c.isServer()){
-            app = new Server();
-        }
-        if(app != null) {
-            app.setConfig(c);
-            Application finalApp = app;
-            Thread t = new Thread(() -> {
-                try {
-                    finalApp.run();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            });
-            t.setDaemon(false);
-            t.start();
-        }else{
-            System.err.println("Unable to select the running environment.");
-        }
     }
-
 }
