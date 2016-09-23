@@ -60,15 +60,43 @@ public class TestServerClient {
     }
 
     //@Test
-    public void TestProxyUDPTCP(){
+    public void TestProxyUDP(){
         try{
             tsapp.main("-s -T 5 --user usr --pass pw 5000 5001".split(" "));
             Thread.sleep(500);
             tsapp.main("-p localhost --proxy-udp 5000 --proxy-tcp 5001 4000 4001".split(" "));
             Thread.sleep(500);
-            tsapp.main("-c localhost -n 10 -u 4000".split(" "));
+            tsapp.main("-c localhost -u 4000".split(" "));
             Thread.sleep(500);
-            tsapp.main("-c localhost -n 10 -t 4001".split(" "));
+        }catch (InterruptedException e){
+            Assert.fail();
+        }
+    }
+
+    //@Test
+    public void TestProxyUDPChangeTime(){
+        try{
+            tsapp.main("-s -T 5 --user usr --pass pw 5000 5001".split(" "));
+            Thread.sleep(500);
+            tsapp.main("-p localhost --proxy-udp 5000 --proxy-tcp 5001 4000 4001".split(" "));
+            Thread.sleep(500);
+            tsapp.main("-c localhost --user usr --pass pw 4000 -T 99".split(" "));
+            Thread.sleep(500);
+            tsapp.main("-c localhost -u 4000".split(" "));
+            Thread.sleep(500);
+        }catch (InterruptedException e){
+            Assert.fail();
+        }
+    }
+
+    @Test
+    public void TestProxyTCP(){
+        try{
+            tsapp.main("-s -T 5 --user usr --pass pw 5000 5001".split(" "));
+            Thread.sleep(500);
+            tsapp.main("-p localhost -t --proxy-udp 5000 --proxy-tcp 5001 4000 4001".split(" "));
+            Thread.sleep(500);
+            tsapp.main("-c localhost -u -t 4001".split(" "));
             Thread.sleep(500);
         }catch (InterruptedException e){
             Assert.fail();
@@ -80,7 +108,7 @@ public class TestServerClient {
     public void cooldown(){
         System.out.println("============================================");
         try {
-            Thread.sleep(3000);
+            Thread.sleep(3000); // ensures the teardown of TCP
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

@@ -10,6 +10,7 @@ import model.Message;
 import model.Operation;
 import util.Config;
 import util.MessageHandler;
+import util.Timer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -92,12 +93,13 @@ public class Server implements Application {
                     udpSocket.receive(receivePacket);
                     // handle code
                     Thread t = new Thread(() -> {
+                        Timer timer = Timer.start();
                         System.out.println("Server: Received Message");
                         byte[] recvBytes = Arrays.copyOf(receivePacket.getData(), receivePacket.getLength());
                         Message m = MessageHandler.getMessage(recvBytes);
                         Message toSend = respond(m);
                         toSend = addTransportInformation(toSend, (String[]) m.get(FieldType.IPPORTSTACK),
-                                (long[]) m.get(FieldType.TIMESTACK), udpSocket.getInetAddress().getHostAddress(), udpSocket.getPort());
+                                (long[]) m.get(FieldType.TIMESTACK), udpSocket.getLocalAddress().getHostAddress(), udpSocket.getLocalPort(),timer.end());
                         if (toSend != null) {
                             System.out.println(String.format("Server: Sending Message to [%s:%s]",
                                     receivePacket.getAddress().getHostAddress(), receivePacket.getPort()));
@@ -132,6 +134,7 @@ public class Server implements Application {
                     // handle code
                     Thread t = new Thread(() -> {
                         try {
+                            Timer timer = Timer.start();
                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
                             InputStream is = acceptedSocket.getInputStream();
                             byte[] buffer = new byte[2048];
@@ -147,7 +150,7 @@ public class Server implements Application {
                             Message toSend = respond(recv);
                             toSend = addTransportInformation(toSend, (String[]) recv.get(FieldType.IPPORTSTACK),
                                     (long[]) recv.get(FieldType.TIMESTACK), tcpSocket.getInetAddress().getHostAddress(),
-                                    tcpSocket.getLocalPort());
+                                    tcpSocket.getLocalPort(),timer.end());
                             if (toSend != null) {
                                 byte[] bytes = toSend.getByteArray();
                                 acceptedSocket.getOutputStream().write(bytes);
@@ -184,7 +187,7 @@ public class Server implements Application {
         return ret;
     }
 
-    private Message addTransportInformation(Message m, String[] ipportstack, long[] timestack, String address, int port) {
+    private Message addTransportInformation(Message m, String[] ipportstack, long[] timestack, String address, int port, long time) {
         // null checks
         if (ipportstack == null)
             ipportstack = new String[0];
@@ -193,12 +196,12 @@ public class Server implements Application {
 
         // take on server time
         ipportstack = Arrays.copyOf(ipportstack, ipportstack.length + 1);
-        ipportstack[ipportstack.length - 1] = address + String.valueOf(port);
+        ipportstack[ipportstack.length - 1] = String.format("%s:%s", address, port);
 
         m.addField(new Field(FieldType.IPPORTSTACK, ipportstack));
 
         timestack = Arrays.copyOf(timestack, timestack.length + 1);
-        timestack[timestack.length - 1] = 0;
+        timestack[timestack.length - 1] = time;
 
         m.addField(new Field(FieldType.TIMESTACK, timestack));
 

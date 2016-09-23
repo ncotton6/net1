@@ -29,6 +29,18 @@ public class ByteUtil {
         return ByteBuffer.allocate(8).putLong(num).array();
     }
 
+    public static byte[] getBytes(long[] array){
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        for(int i = 0; i < array.length; ++i){
+            try {
+                baos.write(getBytes(array[i]));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return baos.toByteArray();
+    }
+
     public static int getInt(byte[] bytes) {
         return ByteBuffer.wrap(bytes).getInt();
     }
@@ -95,7 +107,14 @@ public class ByteUtil {
             if (name == null)
                 return bytes;
             return ByteUtil.combine(FieldType.lookupByteArrayIdentifier(name), bytes);
-        } else if (objData instanceof String) {
+        }else if(objData instanceof long[]){
+            byte[] bytes = getBytes((long[])objData);
+            bytes = combine(getBytes(bytes.length),bytes);
+            if(name == null)
+                return bytes;
+            return combine(FieldType.lookupByteArrayIdentifier(name),bytes);
+        }
+        else if (objData instanceof String) {
             byte[] bytes = ((String) objData).getBytes();
             bytes = combine(getBytes(bytes.length), bytes);
             if (name == null)

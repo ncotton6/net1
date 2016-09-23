@@ -7,8 +7,10 @@ public class Timer {
 
     private long start, end;
 
-    public void start() {
-        start = System.currentTimeMillis();
+    public static Timer start(){
+        Timer t = new Timer();
+        t.start = System.currentTimeMillis();
+        return t;
     }
 
     public long end() {

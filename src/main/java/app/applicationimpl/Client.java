@@ -9,10 +9,15 @@ import util.Config;
 import util.MessageHandler;
 import util.Timer;
 
-import java.io.*;
-import java.net.*;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.Socket;
 import java.util.Arrays;
-import java.util.Random;
 
 /**
  * Created by nathaniel on 8/25/16.
@@ -28,7 +33,6 @@ public class Client implements Application {
     }
 
     public void run() throws IOException {
-        Timer t = new Timer();
         for (int i = 0; i < Math.max(1, config.getNumberOfTimes()); ++i) {
             if (config.getTime() > 0 && config.getUser() != null && config.getPass() != null) {
                 System.out.println("Client: Selected Operation is to CHANGETIME");
@@ -36,21 +40,23 @@ public class Client implements Application {
                 Message setTime = new Message((byte) 1, Operation.CHANGETIME);
                 setTime.addField(new Field(FieldType.TIME, config.getTime()))
                         .addField(new Field(FieldType.USER, config.getUser()))
-                        .addField(new Field(FieldType.PASSWORD, config.getPass()));
-                t.start();
+                        .addField(new Field(FieldType.PASSWORD, config.getPass()))
+                        .addField(new Field(FieldType.TIMESTACK, new long[]{System.currentTimeMillis()}));
+                Timer t = Timer.start();
                 send(setTime);
                 Message recv = recv();
                 long time = t.end();
-                printTransportInfo(recv);
+                printTransportInfo(recv, time);
             } else {
                 // run to get the time
                 System.out.println("Client: Selected Operation is to GETTIME");
-                Message getTime = new Message((byte) 1, Operation.GETTIME);
-                t.start();
+                Message getTime = new Message((byte) 1, Operation.GETTIME)
+                        .addField(new Field(FieldType.TIMESTACK, new long[]{System.currentTimeMillis()}));
                 send(getTime);
+                Timer t = Timer.start();
                 Message m = recv();
                 long time = t.end();
-                printTransportInfo(m);
+                printTransportInfo(m, time);
                 System.out.println("Time: " + m.get(FieldType.TIME));
             }
 
@@ -66,6 +72,7 @@ public class Client implements Application {
         String[] ipportstack = (String[]) m.get(FieldType.IPPORTSTACK);
         long[] timestack = (long[]) m.get(FieldType.TIMESTACK);
         if (ipportstack != null && timestack != null) {
+            timestack[0] = System.currentTimeMillis() - timestack[0];
             long[] timeAtEach = new long[timestack.length];
             for (int i = timestack.length - 2; i >= 0; --i) {
                 timeAtEach[i] = timestack[i] - timestack[i + 1];
@@ -73,29 +80,31 @@ public class Client implements Application {
             System.out.println("------------------------------------------------------");
             System.out.println("-------------  Transport Information  ----------------");
             System.out.println("------------------------------------------------------");
-            System.out.println("Number of hops: " + ipportstack.length);
+            System.out.println("Number of hops: " + (ipportstack.length - 1));
             System.out.println("Total time: " + time + "ms\n");
-            for(int i = 0; i < ipportstack.length; ++i){
-                if(i < timestack.length)
-                    System.out.println(String.format("%s (%sms)",ipportstack[i],timeAtEach[i]));
+            for (int i = 0; i < ipportstack.length; ++i) {
+                if (i < timestack.length)
+                    System.out.println(String.format("%4s %s (%sms)", "[" + (i) + "]", ipportstack[i], timeAtEach[i]));
                 else
                     System.out.println(ipportstack[i]);
             }
-
+            System.out.println("------------------------------------------------------");
         }
     }
 
     private void send(Message message) throws IOException {
         System.out.println("Client: Sending Message");
-        byte[] bytes = message.getByteArray();
         if (config.isUseTCP()) {
             s = new Socket(config.getServerAddress(), config.getPort());
+            message.addField(new Field(FieldType.IPPORTSTACK, new String[]{String.format("%s:%s", s.getLocalAddress().getHostAddress(), s.getLocalPort())}));
+            byte[] bytes = message.getByteArray();
             DataOutputStream out = new DataOutputStream(s.getOutputStream());
             out.write(bytes);
             out.flush();
         } else {
-            System.out.println("Client Bytes: " + Arrays.toString(bytes));
             ds = new DatagramSocket(0);
+            message.addField(new Field(FieldType.IPPORTSTACK, new String[]{String.format("%s:%s", ds.getLocalAddress().getHostAddress(), ds.getLocalPort())}));
+            byte[] bytes = message.getByteArray();
             DatagramPacket dp = new DatagramPacket(bytes, bytes.length);
             dp.setAddress(InetAddress.getByName(config.getServerAddress()));
             dp.setPort(config.getPort());
@@ -111,8 +120,9 @@ public class Client implements Application {
             InputStream is = s.getInputStream();
             byte[] buffer = new byte[2048];
             int read = 0;
-            while ((read = is.read(buffer)) > 0) {
-                baos.write(buffer, 0, read);
+            while ((read = is.read(buffer)) >= 0) {
+                if (read != 0)
+                    baos.write(buffer, 0, read);
             }
             System.out.println("Client: Message Received");
             return MessageHandler.getMessage(baos.toByteArray());
@@ -124,13 +134,4 @@ public class Client implements Application {
         }
     }
 
-    @Override
-    public DatagramSocket getDatagramSocket() {
-        return null;
-    }
-
-    @Override
-    public ServerSocket getServerSocket() {
-        return null;
-    }
 }
