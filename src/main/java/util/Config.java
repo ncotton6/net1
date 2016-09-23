@@ -117,16 +117,18 @@ public class Config {
             c.port2 = cl.getArgList().size() >= 3 ? Integer.valueOf(cl.getArgList().get(2)) : -1;
         }
 
-        verifyConfig(c);
-
+        if(!verifyConfig(c)){
+            throw new IllegalArgumentException("Not a valid configuration");
+        }
         return c;
     }
 
-    private static void verifyConfig(Config c) {
-        if(c != null){
-            return;
-        }
-        throw new IllegalArgumentException("Not a valid configuration");
+    private static boolean verifyConfig(Config c) {
+        if(c == null)
+            return false; // needs to be an object
+        if((c.client && c.proxy) || (c.client && c.server) || (c.proxy && c.server))
+            return false; // only one environment may be selected
+        return true;
     }
 
     private static Options getArgsOptions() {

@@ -16,8 +16,4 @@ public interface Application {
 
     void run() throws IOException;
 
-    DatagramSocket getDatagramSocket();
-
-    ServerSocket getServerSocket();
-
 }

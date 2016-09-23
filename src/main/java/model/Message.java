@@ -95,4 +95,13 @@ public class Message implements ByteArray {
         }
         throw new RuntimeException("Version Must Be Set");
     }
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "version=" + version +
+                ", op=" + op +
+                ", fields=" + fields +
+                '}';
+    }
 }

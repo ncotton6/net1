@@ -45,12 +45,12 @@ public class ByteUtil {
         return getShort(Arrays.copyOfRange(bytes, i, i + 2));
     }
 
-    public static long getLong(byte[] bytes){
+    public static long getLong(byte[] bytes) {
         return ByteBuffer.wrap(bytes).getLong();
     }
 
     public static long getLong(byte[] bytes, int index) {
-        return getLong(Arrays.copyOfRange(bytes,index,index+8));
+        return getLong(Arrays.copyOfRange(bytes, index, index + 8));
     }
 
     public static byte getByte(byte[] bytes) {

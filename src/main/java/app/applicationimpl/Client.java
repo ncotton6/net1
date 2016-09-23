@@ -7,6 +7,7 @@ import model.Message;
 import model.Operation;
 import util.Config;
 import util.MessageHandler;
+import util.Timer;
 
 import java.io.*;
 import java.net.*;
@@ -27,6 +28,7 @@ public class Client implements Application {
     }
 
     public void run() throws IOException {
+        Timer t = new Timer();
         for (int i = 0; i < Math.max(1, config.getNumberOfTimes()); ++i) {
             if (config.getTime() > 0 && config.getUser() != null && config.getPass() != null) {
                 System.out.println("Client: Selected Operation is to CHANGETIME");
@@ -35,15 +37,21 @@ public class Client implements Application {
                 setTime.addField(new Field(FieldType.TIME, config.getTime()))
                         .addField(new Field(FieldType.USER, config.getUser()))
                         .addField(new Field(FieldType.PASSWORD, config.getPass()));
+                t.start();
                 send(setTime);
                 Message recv = recv();
+                long time = t.end();
+                printTransportInfo(recv);
             } else {
                 // run to get the time
                 System.out.println("Client: Selected Operation is to GETTIME");
-                Message getTime = new Message((byte)1,Operation.GETTIME);
+                Message getTime = new Message((byte) 1, Operation.GETTIME);
+                t.start();
                 send(getTime);
                 Message m = recv();
-                System.out.println(m.get(FieldType.TIME));
+                long time = t.end();
+                printTransportInfo(m);
+                System.out.println("Time: " + m.get(FieldType.TIME));
             }
 
             if (s != null && !s.isClosed())
@@ -51,6 +59,29 @@ public class Client implements Application {
 
             if (ds != null && !ds.isClosed())
                 ds.close();
+        }
+    }
+
+    private void printTransportInfo(Message m, long time) {
+        String[] ipportstack = (String[]) m.get(FieldType.IPPORTSTACK);
+        long[] timestack = (long[]) m.get(FieldType.TIMESTACK);
+        if (ipportstack != null && timestack != null) {
+            long[] timeAtEach = new long[timestack.length];
+            for (int i = timestack.length - 2; i >= 0; --i) {
+                timeAtEach[i] = timestack[i] - timestack[i + 1];
+            }
+            System.out.println("------------------------------------------------------");
+            System.out.println("-------------  Transport Information  ----------------");
+            System.out.println("------------------------------------------------------");
+            System.out.println("Number of hops: " + ipportstack.length);
+            System.out.println("Total time: " + time + "ms\n");
+            for(int i = 0; i < ipportstack.length; ++i){
+                if(i < timestack.length)
+                    System.out.println(String.format("%s (%sms)",ipportstack[i],timeAtEach[i]));
+                else
+                    System.out.println(ipportstack[i]);
+            }
+
         }
     }
 
@@ -75,21 +106,21 @@ public class Client implements Application {
 
     private Message recv() throws IOException {
         System.out.println("Client: Receiving Message");
-        if(config.isUseTCP()){
+        if (config.isUseTCP()) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             InputStream is = s.getInputStream();
             byte[] buffer = new byte[2048];
             int read = 0;
-            while((read = is.read(buffer)) != -1){
-                baos.write(buffer,0,read);
+            while ((read = is.read(buffer)) > 0) {
+                baos.write(buffer, 0, read);
             }
             System.out.println("Client: Message Received");
             return MessageHandler.getMessage(baos.toByteArray());
-        }else{
-            DatagramPacket dp = new DatagramPacket(new byte[2048],2048);
+        } else {
+            DatagramPacket dp = new DatagramPacket(new byte[2048], 2048);
             ds.receive(dp);
             System.out.println("Client: Message Received");
-            return MessageHandler.getMessage(Arrays.copyOf(dp.getData(),dp.getLength()));
+            return MessageHandler.getMessage(Arrays.copyOf(dp.getData(), dp.getLength()));
         }
     }
 
