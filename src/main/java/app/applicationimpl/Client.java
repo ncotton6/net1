@@ -45,8 +45,7 @@ public class Client implements Application {
                 Timer t = Timer.start();
                 send(setTime);
                 Message recv = recv();
-                long time = t.end();
-                printTransportInfo(recv, time);
+                printTransportInfo(recv, t);
             } else {
                 // run to get the time
                 System.out.println("Client: Selected Operation is to GETTIME");
@@ -55,8 +54,7 @@ public class Client implements Application {
                 send(getTime);
                 Timer t = Timer.start();
                 Message m = recv();
-                long time = t.end();
-                printTransportInfo(m, time);
+                printTransportInfo(m, t);
                 System.out.println("Time: " + m.get(FieldType.TIME));
             }
 
@@ -68,7 +66,7 @@ public class Client implements Application {
         }
     }
 
-    private void printTransportInfo(Message m, long time) {
+    private void printTransportInfo(Message m, Timer time) {
         String[] ipportstack = (String[]) m.get(FieldType.IPPORTSTACK);
         long[] timestack = (long[]) m.get(FieldType.TIMESTACK);
         if (ipportstack != null && timestack != null) {
@@ -81,7 +79,7 @@ public class Client implements Application {
             System.out.println("-------------  Transport Information  ----------------");
             System.out.println("------------------------------------------------------");
             System.out.println("Number of hops: " + (ipportstack.length - 1));
-            System.out.println("Total time: " + time + "ms\n");
+            System.out.println("Total time: " + time.end() + "ms\n");
             for (int i = 0; i < ipportstack.length; ++i) {
                 if (i < timestack.length)
                     System.out.println(String.format("%4s %s (%sms)", "[" + (i) + "]", ipportstack[i], timeAtEach[i]));
@@ -101,6 +99,7 @@ public class Client implements Application {
             DataOutputStream out = new DataOutputStream(s.getOutputStream());
             out.write(bytes);
             out.flush();
+            s.shutdownOutput();
         } else {
             ds = new DatagramSocket(0);
             message.addField(new Field(FieldType.IPPORTSTACK, new String[]{String.format("%s:%s", ds.getLocalAddress().getHostAddress(), ds.getLocalPort())}));

@@ -9,7 +9,7 @@ import java.io.IOException;
  */
 public class TestServerClient {
 
-    //@Test
+    @Test
     public void TestGetTimeUDP(){
         try {
             tsapp.main("-s -T 5 5000 5001".split(" "));
@@ -21,7 +21,7 @@ public class TestServerClient {
         }
     }
 
-    //@Test
+    @Test
     public void TestChangeTimeUDP(){
         try{
             tsapp.main("-s -T 5 --user usr --pass pw 5000 5001".split(" "));
@@ -34,7 +34,7 @@ public class TestServerClient {
         }
     }
 
-    //@Test
+    @Test
     public void TestGetTimeTCP(){
         try {
             tsapp.main("-s -T 5 5000 5001".split(" "));
@@ -46,7 +46,7 @@ public class TestServerClient {
         }
     }
 
-    //@Test
+    @Test
     public void TestChangeTimeTCP(){
         try{
             tsapp.main("-s -T 5 --user usr --pass pw 5000 5001".split(" "));
@@ -59,7 +59,7 @@ public class TestServerClient {
         }
     }
 
-    //@Test
+    @Test
     public void TestProxyUDP(){
         try{
             tsapp.main("-s -T 5 --user usr --pass pw 5000 5001".split(" "));
@@ -73,7 +73,7 @@ public class TestServerClient {
         }
     }
 
-    //@Test
+    @Test
     public void TestProxyUDPChangeTime(){
         try{
             tsapp.main("-s -T 5 --user usr --pass pw 5000 5001".split(" "));
@@ -96,7 +96,50 @@ public class TestServerClient {
             Thread.sleep(500);
             tsapp.main("-p localhost -t --proxy-udp 5000 --proxy-tcp 5001 4000 4001".split(" "));
             Thread.sleep(500);
-            tsapp.main("-c localhost -u -t 4001".split(" "));
+            tsapp.main("-c localhost -t 4001".split(" "));
+            Thread.sleep(500);
+        }catch (InterruptedException e){
+            Assert.fail();
+        }
+    }
+    @Test
+    public void TestProxyTCPChangeTime(){
+        try{
+            tsapp.main("-s -T 5 --user usr --pass pw 5000 5001".split(" "));
+            Thread.sleep(500);
+            tsapp.main("-p localhost -t --proxy-udp 5000 --proxy-tcp 5001 4000 4001".split(" "));
+            Thread.sleep(500);
+            tsapp.main("-c localhost --user usr --pass pw 4001 -T 99 -t".split(" "));
+            Thread.sleep(500);
+            tsapp.main("-c localhost -t 4001".split(" "));
+            Thread.sleep(500);
+        }catch (InterruptedException e){
+            Assert.fail();
+        }
+    }
+
+    @Test
+    public void TestProxyProtocolSwitchUDPtoTCP(){
+        try{
+            tsapp.main("-s -T 5 --user usr --pass pw 5000 5001".split(" "));
+            Thread.sleep(500);
+            tsapp.main("-p localhost -t --proxy-udp 5000 --proxy-tcp 5001 4000 4001".split(" "));
+            Thread.sleep(500);
+            tsapp.main("-c localhost -u 4000".split(" "));
+            Thread.sleep(500);
+        }catch (InterruptedException e){
+            Assert.fail();
+        }
+    }
+
+    @Test
+    public void TestProxyProtocolSwitchTCPtoUDP(){
+        try{
+            tsapp.main("-s -T 5 --user usr --pass pw 5000 5001".split(" "));
+            Thread.sleep(500);
+            tsapp.main("-p localhost -u --proxy-udp 5000 --proxy-tcp 5001 4000 4001".split(" "));
+            Thread.sleep(500);
+            tsapp.main("-c localhost -t 4001".split(" "));
             Thread.sleep(500);
         }catch (InterruptedException e){
             Assert.fail();
@@ -106,9 +149,9 @@ public class TestServerClient {
 
     @After
     public void cooldown(){
-        System.out.println("============================================");
+        System.out.println("======================================================");
         try {
-            Thread.sleep(3000); // ensures the teardown of TCP
+            Thread.sleep(10000); // ensures the teardown of TCP
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

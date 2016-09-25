@@ -2,9 +2,6 @@ package app.applicationimpl;
 
 
 import app.Application;
-import app.Handler;
-import app.handlerimpl.ServerHandler;
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import model.Field;
 import model.FieldType;
 import model.Message;
@@ -12,12 +9,13 @@ import model.Operation;
 import util.Config;
 import util.MessageHandler;
 
-import javax.xml.crypto.Data;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.*;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by nathaniel on 8/25/16.
@@ -27,6 +25,7 @@ public class Proxy implements Application {
     private boolean stop = false;
     private DatagramSocket udpSocket;
     private ServerSocket tcpSocket;
+    private Map<String, Socket> addressToSocket = new HashMap<>();
 
     public void setConfig(Config c) {
         this.config = c;
@@ -61,11 +60,14 @@ public class Proxy implements Application {
                     byte[] buffer = new byte[2048];
                     DatagramPacket dp = new DatagramPacket(buffer, buffer.length);
                     udpSocket.receive(dp);
+                    System.out.println("Proxy: Received UDP Message");
                     Thread t = new Thread(() -> {
                         byte[] bytes = Arrays.copyOf(dp.getData(), dp.getLength());
                         Message recv = MessageHandler.getMessage(bytes);
                         if (config.isUseTCP()) {
+                            System.out.println("Proxy: Forwarding with TCP");
                             Message sendBack = forwardTCP(recv);
+                            System.out.println("Proxy: Forwarding with UDP");
                             byte[] toSend = sendBack.getByteArray();
                             DatagramPacket dpSend = new DatagramPacket(toSend, toSend.length);
                             dpSend.setAddress(dp.getAddress());
@@ -76,6 +78,7 @@ public class Proxy implements Application {
                                 e.printStackTrace();
                             }
                         } else {
+                            System.out.println("Proxy: Forwarding with UDP");
                             forwardUDP(recv);
                         }
                     });
@@ -94,28 +97,36 @@ public class Proxy implements Application {
             while (!stop) {
                 try {
                     Socket s = tcpSocket.accept();
+                    System.out.println("Proxy: Receiving TCP Message");
                     Thread t = new Thread(() -> {
                         try {
                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
                             InputStream is = s.getInputStream();
                             int read = 0;
                             byte[] buffer = new byte[2048];
-                            while (is.available() > 0 && (read = is.read(buffer)) >= 0){
-                                if(read != 0)
-                                    baos.write(buffer,0,read);
+                            while ((read = is.read(buffer)) >= 0) {
+                                if (read != 0)
+                                    baos.write(buffer, 0, read);
                             }
                             Message m = MessageHandler.getMessage(baos.toByteArray());
-                            if(config.isUseUDP()){
+                            if (config.isUseUDP()) {
+                                String[] ipportstack = (String[]) m.get(FieldType.IPPORTSTACK);
+                                String address = ipportstack[ipportstack.length - 1];
+                                addressToSocket.put(address, s);
+                                System.out.println("Proxy: Forwarding with UDP");
                                 forwardUDP(m);
-                            }else{
+                            } else {
+                                System.out.println("Proxy: Forwarding with TCP");
                                 Message toSend = forwardTCP(m);
                                 s.getOutputStream().write(toSend.getByteArray());
                                 s.close();
                             }
-                        }catch (IOException e){
+                        } catch (IOException e) {
                             e.printStackTrace();
                         }
                     });
+                    t.setDaemon(true);
+                    t.start();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -137,19 +148,32 @@ public class Proxy implements Application {
                 e.printStackTrace();
             }
         } else {
-            // coming
+            // coming could need to be transmitted via TCP
             updateTransportInfo(m, udpSocket.getLocalAddress().getHostAddress(), udpSocket.getLocalPort());
-            String[] goingto = findGoingTo(m, udpSocket.getLocalAddress().getHostAddress(), udpSocket.getLocalPort()).split(":");
-            try {
-                InetAddress address = InetAddress.getByName(goingto[0]);
-                int port = Integer.valueOf(goingto[1]);
-                byte[] bytes = m.getByteArray();
-                DatagramPacket dp = new DatagramPacket(bytes,bytes.length);
-                dp.setAddress(address);
-                dp.setPort(port);
-                udpSocket.send(dp);
-            } catch (IOException e) {
-                e.printStackTrace();
+            String addressport = findGoingTo(m, udpSocket.getLocalAddress().getHostAddress(), udpSocket.getLocalPort());
+            if (addressToSocket.containsKey(addressport)) {
+                Socket s = addressToSocket.get(addressport);
+                addressToSocket.remove(addressport);
+                try {
+                    s.getOutputStream().write(m.getByteArray());
+                    s.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                String[] goingto = addressport.split(":");
+
+                try {
+                    InetAddress address = InetAddress.getByName(goingto[0]);
+                    int port = Integer.valueOf(goingto[1]);
+                    byte[] bytes = m.getByteArray();
+                    DatagramPacket dp = new DatagramPacket(bytes, bytes.length);
+                    dp.setAddress(address);
+                    dp.setPort(port);
+                    udpSocket.send(dp);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
         }
@@ -157,19 +181,20 @@ public class Proxy implements Application {
 
     private Message forwardTCP(Message m) {
         Message ret = null;
-        addTransportInfo(m,tcpSocket.getInetAddress().getHostAddress(),tcpSocket.getLocalPort());
+        addTransportInfo(m, tcpSocket.getInetAddress().getHostAddress(), tcpSocket.getLocalPort());
         try {
-            Socket s = new Socket(config.getServerAddress(),config.getProxyTCP());
+            Socket s = new Socket(config.getServerAddress(), config.getProxyTCP());
             s.getOutputStream().write(m.getByteArray());
+            s.shutdownOutput();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             byte[] buffer = new byte[2048];
             int read = 0;
-            while((read = s.getInputStream().read(buffer)) >= 0){
-                if(read != 0)
-                    baos.write(buffer,0,read);
+            while ((read = s.getInputStream().read(buffer)) >= 0) {
+                if (read != 0)
+                    baos.write(buffer, 0, read);
             }
             ret = MessageHandler.getMessage(baos.toByteArray());
-            updateTransportInfo(ret,tcpSocket.getInetAddress().getHostAddress(),tcpSocket.getLocalPort());
+            updateTransportInfo(ret, tcpSocket.getInetAddress().getHostAddress(), tcpSocket.getLocalPort());
         } catch (IOException e) {
             e.printStackTrace();
         }

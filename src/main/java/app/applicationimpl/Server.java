@@ -99,7 +99,7 @@ public class Server implements Application {
                         Message m = MessageHandler.getMessage(recvBytes);
                         Message toSend = respond(m);
                         toSend = addTransportInformation(toSend, (String[]) m.get(FieldType.IPPORTSTACK),
-                                (long[]) m.get(FieldType.TIMESTACK), udpSocket.getLocalAddress().getHostAddress(), udpSocket.getLocalPort(),timer.end());
+                                (long[]) m.get(FieldType.TIMESTACK), udpSocket.getLocalAddress().getHostAddress(), udpSocket.getLocalPort(), timer.end());
                         if (toSend != null) {
                             System.out.println(String.format("Server: Sending Message to [%s:%s]",
                                     receivePacket.getAddress().getHostAddress(), receivePacket.getPort()));
@@ -140,8 +140,9 @@ public class Server implements Application {
                             byte[] buffer = new byte[2048];
                             int read = 0;
                             try {
-                                while (is.available() != 0 && (read = is.read(buffer)) > 0) {
-                                    baos.write(buffer, 0, read);
+                                while ((read = is.read(buffer)) >= 0) {
+                                    if (read != 0)
+                                        baos.write(buffer, 0, read);
                                 }
                             } catch (Exception e) {
                                 e.printStackTrace();
@@ -150,7 +151,7 @@ public class Server implements Application {
                             Message toSend = respond(recv);
                             toSend = addTransportInformation(toSend, (String[]) recv.get(FieldType.IPPORTSTACK),
                                     (long[]) recv.get(FieldType.TIMESTACK), tcpSocket.getInetAddress().getHostAddress(),
-                                    tcpSocket.getLocalPort(),timer.end());
+                                    tcpSocket.getLocalPort(), timer.end());
                             if (toSend != null) {
                                 byte[] bytes = toSend.getByteArray();
                                 acceptedSocket.getOutputStream().write(bytes);
@@ -177,14 +178,12 @@ public class Server implements Application {
 
 
     private Message respondToGETTIME(Message recv) {
-        Message ret = new Message((byte) 1, Operation.GETTIMERETURN)
+        return new Message((byte) 1, Operation.GETTIMERETURN)
                 .addField(new Field(FieldType.TIME, time.get()));
-        return ret;
     }
 
     private Message respondToCHANGETIME(Message recv, int changed) {
-        Message ret = new Message((byte) 1, Operation.CHANGETIMERETURN).addField(new Field(FieldType.STATUS, changed));
-        return ret;
+        return new Message((byte) 1, Operation.CHANGETIMERETURN).addField(new Field(FieldType.STATUS, changed));
     }
 
     private Message addTransportInformation(Message m, String[] ipportstack, long[] timestack, String address, int port, long time) {
