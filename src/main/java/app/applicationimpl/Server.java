@@ -2,8 +2,6 @@ package app.applicationimpl;
 
 
 import app.Application;
-import app.Handler;
-import app.handlerimpl.ServerHandler;
 import model.Field;
 import model.FieldType;
 import model.Message;
@@ -23,6 +21,9 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * {@link Server} class is used to setup a simple time server that runs on ports specified by the set
+ * {@link Config} object.  It will continuously run until the JVM is shutdown.
+ * <p>
  * Created by nathaniel on 8/25/16.
  */
 public class Server implements Application {
@@ -34,6 +35,11 @@ public class Server implements Application {
     private DatagramSocket udpSocket;
     private ServerSocket tcpSocket;
 
+    /**
+     * Sets the config object.
+     *
+     * @param c
+     */
     public void setConfig(Config c) {
         this.config = c;
         this.time = new AtomicLong(c.getTime());
@@ -41,12 +47,15 @@ public class Server implements Application {
         this.password = c.getPass();
     }
 
+    /**
+     * Sets up threads to and sockets to handle incoming {@link Message}s.  The
+     * setup is dictated by the {@link Config} object.
+     */
     public void run() {
         try {
             int udpPort = config.getPort();
             int tcpPort = config.getSecondPort();
 
-            final Handler handler = new ServerHandler(this);
             // start up the udp port
             udpSocket = new DatagramSocket(udpPort);
             Thread udpThread = getUDPServerThread();
@@ -64,6 +73,14 @@ public class Server implements Application {
         }
     }
 
+    /**
+     * A received message can be passed to this method and the appropriate actions
+     * will be performed. Such as changing the time. Following those actions a new
+     * message will be created that to be sent back.
+     *
+     * @param recv
+     * @return Message
+     */
     private Message respond(Message recv) {
         System.out.println(recv.getOp());
         if (recv.getOp() == Operation.GETTIME) {
@@ -84,6 +101,12 @@ public class Server implements Application {
         return null;
     }
 
+    /**
+     * Produces a thread that will attach itself to the UDP socket,
+     * and handle UDP related requests.
+     *
+     * @return Thread
+     */
     private Thread getUDPServerThread() {
         return new Thread(() -> {
             while (!stop) {
@@ -126,6 +149,13 @@ public class Server implements Application {
         });
     }
 
+    /**
+     * Produces a thread that will attach itself to the TCP socket. This
+     * thread will then handle all incoming {@link Message}s that are
+     * transmitted over TCP.
+     *
+     * @return Thread
+     */
     private Thread getTCPServerThread() {
         return new Thread(() -> {
             while (!stop) {
@@ -176,16 +206,40 @@ public class Server implements Application {
         });
     }
 
-
+    /**
+     * Produces a message that corresponds with a request for the time.
+     *
+     * @param recv
+     * @return
+     */
     private Message respondToGETTIME(Message recv) {
         return new Message((byte) 1, Operation.GETTIMERETURN)
                 .addField(new Field(FieldType.TIME, time.get()));
     }
 
+    /**
+     * Produces a message that corresponds with a request to change the time.
+     *
+     * @param recv
+     * @param changed
+     * @return
+     */
     private Message respondToCHANGETIME(Message recv, int changed) {
         return new Message((byte) 1, Operation.CHANGETIMERETURN).addField(new Field(FieldType.STATUS, changed));
     }
 
+    /**
+     * Add the transport information to the message, so the client will understand how the
+     * {@link Message} was processed.
+     *
+     * @param m
+     * @param ipportstack
+     * @param timestack
+     * @param address
+     * @param port
+     * @param time
+     * @return
+     */
     private Message addTransportInformation(Message m, String[] ipportstack, long[] timestack, String address, int port, long time) {
         // null checks
         if (ipportstack == null)

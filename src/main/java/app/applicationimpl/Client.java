@@ -20,18 +20,34 @@ import java.net.Socket;
 import java.util.Arrays;
 
 /**
+ * {@link Client} is a component of the {@link Application} that allows for messages to be created and
+ * sent across the system.
+ * <p>
+ * <p>
  * Created by nathaniel on 8/25/16.
  */
 public class Client implements Application {
 
+    // Private Variables
     private Config config;
     private DatagramSocket ds;
     private Socket s;
 
+    /**
+     * Sets the configuration
+     *
+     * @param c
+     */
     public void setConfig(Config c) {
         this.config = c;
     }
 
+    /**
+     * This implementation of run will have the {@link Client} read the passed in
+     * {@link Config} object to determine what to do.
+     *
+     * @throws IOException
+     */
     public void run() throws IOException {
         for (int i = 0; i < Math.max(1, config.getNumberOfTimes()); ++i) {
             if (config.getTime() > 0 && config.getUser() != null && config.getPass() != null) {
@@ -66,6 +82,14 @@ public class Client implements Application {
         }
     }
 
+    /**
+     * Since {@link Message}s returning to the {@link Client} will have transport
+     * information on them this method will extract that information and print
+     * it out.
+     *
+     * @param m
+     * @param time
+     */
     private void printTransportInfo(Message m, Timer time) {
         String[] ipportstack = (String[]) m.get(FieldType.IPPORTSTACK);
         long[] timestack = (long[]) m.get(FieldType.TIMESTACK);
@@ -90,6 +114,14 @@ public class Client implements Application {
         }
     }
 
+    /**
+     * For convince this send method was created to take in a {@link Message} as
+     * a parameter and read the {@link Config} object to determine how the {@link Message}
+     * should be sent.
+     *
+     * @param message
+     * @throws IOException
+     */
     private void send(Message message) throws IOException {
         System.out.println("Client: Sending Message");
         if (config.isUseTCP()) {
@@ -112,6 +144,14 @@ public class Client implements Application {
         System.out.println("Client: Message Sent");
     }
 
+    /**
+     * This method will read the {@link Config} object and determine how a {@link Message}
+     * should be received.  Then turns the received byte[] into a {@link Message} object.
+     *
+     *
+     * @return
+     * @throws IOException
+     */
     private Message recv() throws IOException {
         System.out.println("Client: Receiving Message");
         if (config.isUseTCP()) {

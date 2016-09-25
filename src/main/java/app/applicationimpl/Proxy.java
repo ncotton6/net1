@@ -18,19 +18,32 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * {@link Proxy} class allows for a some degree of redirection between a client and the origin server.
+ * This class will setup hooks similar to those the the origin server setups.  When the proxy receives a
+ * message on one of these hooks it will then forward it on to the server.
+ * <p>
  * Created by nathaniel on 8/25/16.
  */
 public class Proxy implements Application {
+    // private variables
     private Config config;
     private boolean stop = false;
     private DatagramSocket udpSocket;
     private ServerSocket tcpSocket;
     private Map<String, Socket> addressToSocket = new HashMap<>();
 
+    /**
+     * Sets the {@link Config} object.
+     *
+     * @param c
+     */
     public void setConfig(Config c) {
         this.config = c;
     }
 
+    /**
+     * Sets up the hooks for UDP and TCP connections, to process incoming requests.
+     */
     public void run() {
         try {
 
@@ -53,6 +66,11 @@ public class Proxy implements Application {
         }
     }
 
+    /**
+     * This method produces a {@link Thread} that will handle all incoming UDP requests.
+     *
+     * @return Thread
+     */
     private Thread getUDPServerThread() {
         return new Thread(() -> {
             while (!stop) {
@@ -92,6 +110,11 @@ public class Proxy implements Application {
         });
     }
 
+    /**
+     * This method produces a {@link Thread} that will handle all incoming TCP requests.
+     *
+     * @return
+     */
     private Thread getTCPServerThread() {
         return new Thread(() -> {
             while (!stop) {
@@ -134,6 +157,11 @@ public class Proxy implements Application {
         });
     }
 
+    /**
+     * For ease of use in other parts of the application this method will accept a {@link Message} object
+     * and pass it on to its next destination using UDP.
+     * @param m
+     */
     private void forwardUDP(Message m) {
         if (m.getOp() == Operation.CHANGETIME || m.getOp() == Operation.GETTIME) {
             // going
@@ -179,6 +207,13 @@ public class Proxy implements Application {
         }
     }
 
+    /**
+     * For ease in other parts of the application this method will accept a {@link Message} and
+     * forward it along using TCP. Unlike the UDP version of this method this one will return
+     * a {@link Message} that was a response from forwarding the TCP message.
+     * @param m
+     * @return Message
+     */
     private Message forwardTCP(Message m) {
         Message ret = null;
         addTransportInfo(m, tcpSocket.getInetAddress().getHostAddress(), tcpSocket.getLocalPort());
@@ -201,6 +236,14 @@ public class Proxy implements Application {
         return ret;
     }
 
+    /**
+     * This method will add the transport information for this {@link Proxy} to the Message.
+     * This method is used for {@link Message}s that are on there way to the origin server.
+     *
+     * @param m
+     * @param address
+     * @param port
+     */
     private void addTransportInfo(Message m, String address, int port) {
         String[] ipportstack = (String[]) m.get(FieldType.IPPORTSTACK);
         long[] timestack = (long[]) m.get(FieldType.TIMESTACK);
@@ -212,6 +255,14 @@ public class Proxy implements Application {
         m.addField(new Field(FieldType.TIMESTACK, timestack));
     }
 
+    /**
+     * This method will update the transport information stored on a {@link Message}. This
+     * method is used for {@link Message}s that are going back to the client.
+     *
+     * @param m
+     * @param address
+     * @param port
+     */
     private void updateTransportInfo(Message m, String address, int port) {
         String[] ipportstack = (String[]) m.get(FieldType.IPPORTSTACK);
         long[] timestack = (long[]) m.get(FieldType.TIMESTACK);
@@ -223,6 +274,18 @@ public class Proxy implements Application {
         }
     }
 
+    /**
+     * For connections that go from TCP to UDP on there way to the origin server,
+     * and need to go back to TCP on there way back to the client. This method
+     * proves to be quite useful as it will look at the IPPORTSTACK field and
+     * determine what address it the message needs to go to next.  This can be
+     * used to lookup the required socket.
+     *
+     * @param m
+     * @param address
+     * @param port
+     * @return
+     */
     private String findGoingTo(Message m, String address, int port) {
         String[] ipportstack = (String[]) m.get(FieldType.IPPORTSTACK);
         String search = String.format("%s:%s", address, port);
