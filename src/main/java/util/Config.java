@@ -5,10 +5,14 @@ import org.apache.commons.cli.*;
 import java.util.*;
 
 /**
+ * The {@link Config} class is an object that holds a wealth of information that dictates how the
+ * {@link app.Application} should behave.
+ *
  * Created by nathaniel on 8/24/16.
  */
 public class Config {
 
+    // Private Variables
     private boolean client = false;
     private boolean proxy = false;
     private boolean server = false;
@@ -25,6 +29,7 @@ public class Config {
     private int port1 = -1;
     private int port2 = -1;
 
+    // Getters and Setters.
     public boolean isClient() {
         return client;
     }
@@ -85,7 +90,13 @@ public class Config {
         return port2;
     }
 
-
+    /**
+     * This method will parse the arguments passed in via the command line and
+     * produce a config that represents those arguments.
+     * @param args
+     * @return
+     * @throws ParseException
+     */
     public static Config parseArgs(String[] args) throws ParseException {
         Config c = new Config();
         CommandLineParser clp = new DefaultParser();
@@ -123,14 +134,21 @@ public class Config {
         return c;
     }
 
+    /**
+     * This method validates that the produced config is valid.
+     * @param c
+     * @return
+     */
     private static boolean verifyConfig(Config c) {
-        if(c == null)
-            return false; // needs to be an object
-        if((c.client && c.proxy) || (c.client && c.server) || (c.proxy && c.server))
-            return false; // only one environment may be selected
-        return true;
+        // needs to be an object
+        return c != null && !((c.client && c.proxy) || (c.client && c.server) || (c.proxy && c.server));
     }
 
+    /**
+     * The commons cli library provides functionality for parsing arguments. This method
+     * produces an {@link Options} object that represents the possible configurations.
+     * @return
+     */
     private static Options getArgsOptions() {
         Options options = new Options();
         // environment

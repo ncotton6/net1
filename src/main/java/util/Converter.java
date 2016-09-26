@@ -6,14 +6,24 @@ import java.io.ByteArrayOutputStream;
 import java.util.*;
 
 /**
+ * This {@link Converter} class holds all sorts of connections to {@link Convert} implementations to turn
+ * a byte[] into usable objects.
+ *
  * Created by nathaniel on 9/7/16.
  */
 public class Converter {
 
+    // Private Variables
     private static Converter converter;
     private Map<Byte, Map<Class<?>, Convert>> convertUnits = new HashMap<>();
 
+    /**
+     * The constructor for the converter is setup to be private, so that
+     * it can behave as a singleton. It also sets up all sorts of conversion
+     * handlers.
+     */
     private Converter() {
+        // Adds all sorts of conversion handlers.
         Map<Class<?>, Convert> version1 = new HashMap<>();
         version1.put(long.class,ByteUtil::getLong);
         version1.put(int.class,ByteUtil::getInt);
@@ -60,6 +70,10 @@ public class Converter {
         convertUnits.put((byte) 1, version1);
     }
 
+    /**
+     * Private get for convenience of internal methods to interact with the singleton.
+     * @return Converter
+     */
     private static Converter get() {
         if (converter == null)
             synchronized (Converter.class) {
@@ -69,11 +83,25 @@ public class Converter {
         return converter;
     }
 
+    /**
+     * This method will take in identifying information and produce an object
+     * from the passed in byte[].
+     * @param version
+     * @param clazz
+     * @param bytes
+     * @return Object
+     */
     public static Object convert(byte version, Class<?> clazz, byte[] bytes) {
         return get().getConverter(version,clazz).convert(bytes);
     }
 
-
+    /**
+     * This method will get the {@link Convert} implementor from the {@link Converter}
+     * for the passed in information.
+     * @param version
+     * @param clazz
+     * @return
+     */
     public Convert getConverter(byte version, Class<?> clazz){
         if(convertUnits.containsKey(version))
             if(convertUnits.get(version).containsKey(clazz))

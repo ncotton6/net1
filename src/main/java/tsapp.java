@@ -11,10 +11,18 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
+ * Entry point into the application is the {@link tsapp} class that will take the passed in
+ * arguments and setup an {@link Application} and run it.
+ * <p>
  * Created by nathaniel on 8/24/16.
  */
 public class tsapp {
 
+    /**
+     * Starts up the required {@link Application} based off of the passed in commands.
+     *
+     * @param args
+     */
     public static void main(String[] args) {
         try {
             Config c = null;
