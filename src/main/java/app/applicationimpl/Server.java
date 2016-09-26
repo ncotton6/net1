@@ -117,20 +117,19 @@ public class Server implements Application {
                     // handle code
                     Thread t = new Thread(() -> {
                         Timer timer = Timer.start();
-                        System.out.println("Server: Received Message");
+                        System.out.println("Server: Received Message over UDP");
                         byte[] recvBytes = Arrays.copyOf(receivePacket.getData(), receivePacket.getLength());
                         Message m = MessageHandler.getMessage(recvBytes);
                         Message toSend = respond(m);
                         toSend = addTransportInformation(toSend, (String[]) m.get(FieldType.IPPORTSTACK),
                                 (long[]) m.get(FieldType.TIMESTACK), udpSocket.getLocalAddress().getHostAddress(), udpSocket.getLocalPort(), timer.end());
                         if (toSend != null) {
-                            System.out.println(String.format("Server: Sending Message to [%s:%s]",
-                                    receivePacket.getAddress().getHostAddress(), receivePacket.getPort()));
                             byte[] bytes = toSend.getByteArray();
                             DatagramPacket dp = new DatagramPacket(bytes, bytes.length);
                             dp.setAddress(receivePacket.getAddress());
                             dp.setPort(receivePacket.getPort());
                             try {
+                                System.out.println("Server: Sending Message over UDP");
                                 udpSocket.send(dp);
                             } catch (IOException e) {
                                 e.printStackTrace();
@@ -164,6 +163,7 @@ public class Server implements Application {
                     // handle code
                     Thread t = new Thread(() -> {
                         try {
+                            System.out.println("Server: Received Message over TCP");
                             Timer timer = Timer.start();
                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
                             InputStream is = acceptedSocket.getInputStream();
@@ -183,6 +183,7 @@ public class Server implements Application {
                                     (long[]) recv.get(FieldType.TIMESTACK), tcpSocket.getInetAddress().getHostAddress(),
                                     tcpSocket.getLocalPort(), timer.end());
                             if (toSend != null) {
+                                System.out.println("Server: Sending Message over TCP");
                                 byte[] bytes = toSend.getByteArray();
                                 acceptedSocket.getOutputStream().write(bytes);
                                 acceptedSocket.getOutputStream().flush();

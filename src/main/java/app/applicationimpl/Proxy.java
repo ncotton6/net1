@@ -85,12 +85,12 @@ public class Proxy implements Application {
                         if (config.isUseTCP()) {
                             System.out.println("Proxy: Forwarding with TCP");
                             Message sendBack = forwardTCP(recv);
-                            System.out.println("Proxy: Forwarding with UDP");
                             byte[] toSend = sendBack.getByteArray();
                             DatagramPacket dpSend = new DatagramPacket(toSend, toSend.length);
                             dpSend.setAddress(dp.getAddress());
                             dpSend.setPort(dp.getPort());
                             try {
+                                System.out.println("Proxy: Forwarding with UDP");
                                 udpSocket.send(dpSend);
                             } catch (IOException e) {
                                 e.printStackTrace();

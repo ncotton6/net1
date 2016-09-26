@@ -17,7 +17,11 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.SimpleTimeZone;
 
 /**
  * {@link Client} is a component of the {@link Application} that allows for messages to be created and
@@ -71,7 +75,17 @@ public class Client implements Application {
                 Timer t = Timer.start();
                 Message m = recv();
                 printTransportInfo(m, t);
-                System.out.println("Time: " + m.get(FieldType.TIME));
+                long time = (long) m.get(FieldType.TIME);
+                if(config.isUseUTCTime()){
+                    Date date = new Date();
+                    date.setTime(time);
+                    SimpleDateFormat sdf = new SimpleDateFormat();
+                    sdf.setTimeZone(new SimpleTimeZone(SimpleTimeZone.UTC_TIME,"UTC"));
+                    String utc = sdf.format(date);
+                    System.out.println("UTC Time: " + utc);
+                }else {
+                    System.out.println("Time: " + time);
+                }
             }
 
             if (s != null && !s.isClosed())
@@ -123,8 +137,8 @@ public class Client implements Application {
      * @throws IOException
      */
     private void send(Message message) throws IOException {
-        System.out.println("Client: Sending Message");
         if (config.isUseTCP()) {
+            System.out.println("Client: Sending Message over TCP");
             s = new Socket(config.getServerAddress(), config.getPort());
             message.addField(new Field(FieldType.IPPORTSTACK, new String[]{String.format("%s:%s", s.getLocalAddress().getHostAddress(), s.getLocalPort())}));
             byte[] bytes = message.getByteArray();
@@ -133,6 +147,7 @@ public class Client implements Application {
             out.flush();
             s.shutdownOutput();
         } else {
+            System.out.println("Client: Sending Message over UDP");
             ds = new DatagramSocket(0);
             message.addField(new Field(FieldType.IPPORTSTACK, new String[]{String.format("%s:%s", ds.getLocalAddress().getHostAddress(), ds.getLocalPort())}));
             byte[] bytes = message.getByteArray();
@@ -153,7 +168,6 @@ public class Client implements Application {
      * @throws IOException
      */
     private Message recv() throws IOException {
-        System.out.println("Client: Receiving Message");
         if (config.isUseTCP()) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             InputStream is = s.getInputStream();
@@ -163,12 +177,12 @@ public class Client implements Application {
                 if (read != 0)
                     baos.write(buffer, 0, read);
             }
-            System.out.println("Client: Message Received");
+            System.out.println("Client: Message Received over TCP");
             return MessageHandler.getMessage(baos.toByteArray());
         } else {
             DatagramPacket dp = new DatagramPacket(new byte[2048], 2048);
             ds.receive(dp);
-            System.out.println("Client: Message Received");
+            System.out.println("Client: Message Received over UDP");
             return MessageHandler.getMessage(Arrays.copyOf(dp.getData(), dp.getLength()));
         }
     }

@@ -169,7 +169,7 @@ public class Config {
         options.addOption(new Option("n", true, "Number of times to execute the command"));
 
         // time type
-        options.addOption(new Option("z", true, "Use UTC time"));
+        options.addOption(new Option("z", false, "Use UTC time"));
 
         // proxy transport
         options.addOption(new Option("", "proxy-udp", true, "Proxy UDP connection"));
