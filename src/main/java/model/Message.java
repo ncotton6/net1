@@ -9,14 +9,18 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
+ * {@link Message} class holds information that is critical for sending information across the network.
+ *
  * Created by nathaniel on 8/29/16.
  */
 public class Message implements ByteArray {
 
+    // Private Variables
     private byte version = 0;
     private Operation op;
     private Map<String, Object> fields = new HashMap<>();
 
+    // Constructors
     public Message() {
     }
 
@@ -30,6 +34,8 @@ public class Message implements ByteArray {
         this.op = op;
         this.fields = fields;
     }
+
+    // Getters and Setters
 
     public byte getVersion() {
         return version;
@@ -55,10 +61,21 @@ public class Message implements ByteArray {
         this.fields = fields;
     }
 
+    /**
+     * Adds a {@link Field} to the {@link Message}.
+     * @param f
+     * @return Message for chaining
+     */
     public Message addField(Field f) {
         return addData(f.getId(),f);
     }
 
+    /**
+     * Adds data to the {@link Message}.
+     * @param name
+     * @param data
+     * @return
+     */
     public Message addData(String name, Object data){
         if (fields == null)
             fields = new HashMap<>();
@@ -66,6 +83,11 @@ public class Message implements ByteArray {
         return this;
     }
 
+    /**
+     * Allows for {@link Field} data to be extracted from the {@link Message}.
+     * @param ft
+     * @return
+     */
     public Object get(FieldType ft) {
         Optional<Object> field = fields.values().stream().filter((v)-> v instanceof Field && ((Field) v).getId().equals(ft.name())).findFirst();
         if(field.isPresent()) {

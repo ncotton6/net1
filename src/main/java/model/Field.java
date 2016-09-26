@@ -5,13 +5,17 @@ import util.ByteUtil;
 import java.io.IOException;
 
 /**
+ * {@link Field} class helps to represent the fields that exist within {@link Message}s.
+ *
  * Created by nathaniel on 8/29/16.
  */
 public class Field implements ByteArray {
 
+    // private variables
     private String id;
     private Object objData;
 
+    // constructors
     public Field() {
     }
 
@@ -25,18 +29,34 @@ public class Field implements ByteArray {
         this.objData = objData;
     }
 
+    /**
+     * Get id
+     * @return String
+     */
     public String getId() {
         return id;
     }
 
+    /**
+     * Set id
+     * @param id
+     */
     public void setId(String id) {
         this.id = id;
     }
 
+    /**
+     * Get value
+     * @return Object
+     */
     public Object getObjData() {
         return objData;
     }
 
+    /**
+     * Set object
+     * @param objData
+     */
     public void setObjData(Object objData) {
         this.objData = objData;
     }

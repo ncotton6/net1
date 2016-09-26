@@ -7,6 +7,9 @@ import java.util.Arrays;
 import java.util.Map;
 
 /**
+ * {@link VersionOneParseHandler} class implements {@link ParseHandler} and allows for the first version
+ * of the protocol to be parsed from a byte[] to a Message.
+ *
  * Created by nathaniel on 8/29/16.
  */
 public class VersionOneParseHandler implements ParseHandler {

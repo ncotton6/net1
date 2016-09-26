@@ -1,6 +1,9 @@
 package model;
 
 /**
+ * {@link Operation} enum allows for an easy way of identifing the operations that are
+ * associated with {@link Message}s.
+ *
  * Created by nathaniel on 8/29/16.
  */
 public enum Operation {
@@ -16,6 +19,12 @@ public enum Operation {
         this.id = id;
     }
 
+    /**
+     * Gets an operation based off of its identifier.
+     *
+     * @param id
+     * @return
+     */
     public static Operation getOperation(short id) {
         Operation[] ops = Operation.values();
         for (int i = 0; i < ops.length; ++i) {
